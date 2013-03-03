@@ -6,6 +6,12 @@ phonegap plugin to detect faces on pictures
 sample phonegap project with the face detect iOS plugin.
 
 if it detects faces return a string with this format {{x1,y1},{widht1,height1}}{{x2,y2}{width2,height2}...{{xn,yn},{widthn,heightn}}
+each {{x,y}{width,height}} is a rectangle or square
+x is the x point on the original image where the square start
+y is the y point on the original image where the square start
+width is the width of the face on the original image
+height is the height of the face on the original image
+
 if it doesn't detect a face alerts 'No faces.'
 
 The sample project uses the camera sample code
