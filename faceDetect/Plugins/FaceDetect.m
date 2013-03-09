@@ -25,18 +25,14 @@ static inline double radians (double degrees) {return degrees * M_PI/180;}
     
     UIImageView *imagen = [[UIImageView alloc] initWithImage:[self resizeImage:Realimage]];
     
-    // La añadimos a nuestra vista
-    
-    //[self.viewController.view addSubview:imagen];
-    
-    // Llamamos al método markFaces para poder detectar los rostros y sí los detecta pintarlos en pantalla
+
     CGAffineTransform transform = CGAffineTransformMakeScale(1, -1);
     transform = CGAffineTransformTranslate(transform,
                                            0,-imagen.bounds.size.height);
     
-    NSString * result = [self markFaces:imagen withTransform:transform];
+    NSArray * result = [self markFaces:imagen withTransform:transform];
     if (result != nil) {
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:result];
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:result];
     } else {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"No faces"];
     }
@@ -98,53 +94,36 @@ static inline double radians (double degrees) {return degrees * M_PI/180;}
 }
 
 
--(NSMutableString *)markFaces:(UIImageView *)imagenCara withTransform:(CGAffineTransform) transform
+-(NSArray *)markFaces:(UIImageView *)imagenCara withTransform:(CGAffineTransform) transform
 {
-    NSMutableString * resultString = [[NSMutableString alloc]init];
+    NSMutableArray * resultArray = [[NSMutableArray alloc]init];
     
     CIImage *imagen = [CIImage imageWithCGImage:imagenCara.image.CGImage];
-    // Para el detector, utilizamos la constante "CIDetectorAccuracyHigh" la cual nos proporciona una precisión mejor pero requiere más tiempo de procesado
-    // Más info en http://developer.apple.com/library/ios/#documentation/CoreImage/Reference/CIDetector_Ref/Reference/Reference.html
+
+    
     CIDetector *detector = [CIDetector detectorOfType:CIDetectorTypeFace context:nil options:[NSDictionary dictionaryWithObject:CIDetectorAccuracyHigh forKey:CIDetectorAccuracy]];
     
     // Creamos un array con todas las caras detectadas en la imagen
     NSArray *features = [detector featuresInImage:imagen];
     
     if ([features count]==0) {
-        resultString = nil;
+        resultArray = nil;
     }
     // Hacemos un bucle por si detecta más de un rostro en la imagen
     for (CIFaceFeature *faceFeature in features) {
-        
+        NSMutableDictionary * faceDict = [[NSMutableDictionary alloc]init];
         // Convertir coordenadas CoreImage a UIKit
         CGRect faceRect = CGRectApplyAffineTransform(faceFeature.bounds, transform);
-        [resultString appendString:NSStringFromCGRect(faceRect)];
-        // Obtener el ancho de la cara
-        CGFloat faceWidth = faceFeature.bounds.size.width;
-        
-        // UIView usando las dimensiones de la cara detectada
-        UIView *faceView = [[UIView alloc] initWithFrame:faceRect];
-        
-        // Añadimos un borde alrededor del UIView
-        faceView.layer.borderWidth = 1;
-        faceView.layer.borderColor = [[UIColor blueColor] CGColor];
-        
-        //[self.viewController.view addSubview:faceView];
-        
+
+        [faceDict setValue:NSStringFromCGRect(faceRect) forKey:@"face"];
+
         // Ojo derecho
         if (faceFeature.hasRightEyePosition) {
             
             // Convertir coordenadas CoreImage a UIKit
             CGPoint rightEyePos = CGPointApplyAffineTransform(faceFeature.rightEyePosition, transform);
+            [faceDict setValue:NSStringFromCGPoint(rightEyePos) forKey:@"right_eye"];
             
-            // Creamos una UIView con el tamaño del ojo derecho
-            UIView *rightEye = [[UIView alloc] initWithFrame:CGRectMake(rightEyePos.x - faceWidth * 0.15, rightEyePos.y - faceWidth * 0.15, faceWidth * 0.3, faceWidth * 0.3)];
-            
-            rightEye.backgroundColor = [[UIColor redColor] colorWithAlphaComponent:0.4];
-            rightEye.center = rightEyePos;
-            
-            rightEye.layer.cornerRadius = faceWidth * 0.15;
-            //[self.viewController.view addSubview:rightEye];
         }
         
         // Ojo izquierdo
@@ -152,15 +131,8 @@ static inline double radians (double degrees) {return degrees * M_PI/180;}
             
             // Convertir coordenadas CoreImage a UIKit
             CGPoint leftEyePos = CGPointApplyAffineTransform(faceFeature.leftEyePosition, transform);
+            [faceDict setValue:NSStringFromCGPoint(leftEyePos) forKey:@"left_eye"];
             
-            // Creamos una UIView con el tamaño del ojo izquierdo
-            UIView *leftEye = [[UIView alloc] initWithFrame:CGRectMake(leftEyePos.x - faceWidth * 0.15, leftEyePos.y - faceWidth * 0.15, faceWidth * 0.3, faceWidth * 0.3)];
-            
-            leftEye.backgroundColor = [[UIColor redColor] colorWithAlphaComponent:0.4];
-            leftEye.center = leftEyePos;
-            
-            leftEye.layer.cornerRadius = faceWidth * 0.15;
-            //[self.viewController.view addSubview:leftEye];
         }
         
         // Boca
@@ -168,19 +140,14 @@ static inline double radians (double degrees) {return degrees * M_PI/180;}
             
             // Convertir coordenadas CoreImage a UIKit
             CGPoint mouthPos = CGPointApplyAffineTransform(faceFeature.mouthPosition, transform);
+            [faceDict setValue:NSStringFromCGPoint(mouthPos) forKey:@"mouth"];
             
-            // Creamos una UIView con el tamaño de la boca
-            UIView *mouth = [[UIView alloc] initWithFrame:CGRectMake(mouthPos.x - faceWidth * 0.20, mouthPos.y - faceWidth * 0.20, faceWidth * 0.40, faceWidth * 0.40)];
-            
-            mouth.backgroundColor = [[UIColor greenColor] colorWithAlphaComponent:0.4];
-            mouth.center = mouthPos;
-            
-            mouth.layer.cornerRadius = faceWidth * 0.20;
-            //[self.viewController.view addSubview:mouth];
         }
+        
+        [resultArray addObject:faceDict];
     }
     
-    return resultString;
+    return resultArray;
 
 }
 

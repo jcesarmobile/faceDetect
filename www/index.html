@@ -26,7 +26,7 @@
             //
             function onPhotoURISuccess(imageURI) {
                 
-                window.FaceDetect({url_imagen: imageURI},nativePluginResultHandler);
+                window.FaceDetect({url_imagen: imageURI},nativePluginResultHandler,nativePluginErrorHandler);
             }
             
             // A button will call this function
@@ -55,9 +55,25 @@
           
             
             function nativePluginResultHandler (result) {
-                alert("ok: "+result);
+                var resultString = "";
+                //alert(result[0].face);
+                for (var i=0;i<result.length;i++) {
+                    resultString += "face "+(i+1)+": "+result[i].face;
+                    resultString += "right eye: "+result[i].right_eye;
+                    resultString += "left eye: "+result[i].left_eye;
+                    resultString += "mouth: "+result[i].mouth;
+                    resultString += "<br/>";
+                }
+                
                 var resultado = document.getElementById("resultado");
-                //alert(resultado.innerHTML);
+   
+                resultado.innerHTML = resultString;
+            }
+            
+            function nativePluginErrorHandler (result) {
+                
+                var resultado = document.getElementById("resultado");
+                
                 resultado.innerHTML = result;
             }
             
